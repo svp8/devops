@@ -1,0 +1,28 @@
+- hosts: all
+  vars:
+    cloudpass: cloudpass
+  tasks:
+    - name: Create new user
+      become: true
+      ansible.builtin.user:
+        name: cloudru
+        password: "{{ cloudpass | password_hash('sha512') }}"
+    - name: Disable root login
+      become: true
+      lineinfile:
+        dest=/etc/ssh/sshd_config
+        regexp='^PermitRootLogin'
+        line="PermitRootLogin no"
+      notify:
+        - restart ssh
+    - name: Send ssh key
+      become: true
+      authorized_key:
+        user=cloudru
+        key="{{ lookup('file','/etc/ansible/key1.txt') }}"
+  handlers:
+    - name: restart ssh
+      become: true
+      service:
+        name=sshd
+        state=restarted

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  labels:
+    app: web
+spec:
+  selector:
+    matchLabels:
+      app: webapp
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: hello
+        image: hello
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        # command: [ "sh", "-c"]
+        # args:
+        # - while true; do
+        #     echo -en '\n';
+        #     printenv MY_NODE_NAME MY_POD_NAME MY_POD_NAMESPACE;
+        #     printenv MY_POD_IP MY_POD_SERVICE_ACCOUNT;
+        #     sleep 10;
+        #   done;
+        env:
+        - name: UUID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        readinessProbe:
+          httpGet:
+            path: /hostname
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - ls
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: serv
+spec:
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      name: http
+  selector:
+    app: webapp
